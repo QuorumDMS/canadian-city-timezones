@@ -31,9 +31,12 @@ async function * getCityData() {
     const csdType =row['CSD type, english'];
     if (!VALID_CSD_TYPES.includes(csdType)) continue;
 
+    const name = row['Geographic name, english'];
+    const province = row['Province / territory, english'];
+
     yield {
-      name: row['Geographic name, english'],
-      province: row['Province / territory, english']
+      name,
+      province
     };
   }
 }
@@ -49,6 +52,7 @@ async function getLocationData(value) {
   url.searchParams.append('countrycodes', 'ca');
 
   const req = await fetch(url.href);
+  if (req.status === 404) return null;
   if (!req.ok) {
     throw new Error(`Not ok: ${req.status}`);
   }
@@ -77,6 +81,8 @@ async function * generateData() {
     const value = [cityData.name, cityData.province].join(', ');
 
     const location = await getLocationData(value);
+    if (!location) continue;
+
     const timezone = await getTimezoneData(location);
 
     yield [
