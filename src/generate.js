@@ -7,6 +7,7 @@ const { promisify } = require('util');
 const fetch = require('node-fetch');
 const csv = require('csv-parser');
 const {removeSpecialCharacters} = require('./util');
+const { exit } = require('process');
 
 const pipelineAsync = promisify(pipeline);
 
@@ -43,7 +44,6 @@ async function getGeocodeData(value) {
   const params = new URLSearchParams();
   params.append('locate', value);
   params.append('region', 'CA');
-  params.append('auth', process.env.GEOCODE_API_KEY);
   params.append('json', '1');
   params.append('moreinfo', '1');
 
@@ -97,5 +97,6 @@ void async function () {
     await writeData(`${__dirname}/data.csv`, generateData());
   } catch (err) {
     console.error(err);
+    exit(1);
   }
 }();
