@@ -41,7 +41,7 @@ async function * getCityData() {
   }
 }
 
-async function getLocationData(value) {
+async function getLocationData(value, count = 0) {
   const url = new URL('search.php', LOCATION_API_URL);
   url.searchParams.append('key', process.env.LOCATION_API_KEY);
   url.searchParams.append('format', 'json');
@@ -53,21 +53,36 @@ async function getLocationData(value) {
 
   const req = await fetch(url.href);
   if (req.status === 404) return null;
+  if (req.status === 429) {
+    if (count === 0) {
+      await sleep(1000);
+      return await getLocationData(value, count + 1);
+    }
+  }
+
   if (!req.ok) {
     throw new Error(`Not ok: ${req.status}`);
   }
 
   const json = await req.json();
-  return json[0] || null;
+  const locations = json.filter((item) => item.address.city && item.address.state);
+  return locations[0];
 }
 
-async function getTimezoneData({lat, lon} = {}) {
+async function getTimezoneData({lat, lon} = {}, count = 0) {
   const url = new URL('timezone.php', LOCATION_API_URL);
   url.searchParams.append('key', process.env.LOCATION_API_KEY);
   url.searchParams.append('lat', lat);
   url.searchParams.append('lon', lon);
 
   const req = await fetch(url.href);
+  if (req.status === 429) {
+    if (count === 0) {
+      await sleep(1000);
+      return await getLocationData(value, count + 1);
+    }
+  }
+
   if (!req.ok) {
     throw new Error(`Not ok: ${req.status}`);
   }
