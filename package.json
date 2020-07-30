@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "description": "",
   "main": "src/index.js",
+  "files": [
+    "src/index.js",
+    "src/util.js",
+    "src/data.csv"
+  ],
   "scripts": {
     "generate": "node ./generate.js"
   },
