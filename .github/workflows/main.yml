@@ -17,6 +17,8 @@ jobs:
       - name: Install
         run: npm ci
       - name: Generate
+        env:
+          GEOCODE_API_KEY: ${{ secrets.GEOCODE_API_KEY }}
         run: node ./src/generate.js
       - name: Release
         env:
