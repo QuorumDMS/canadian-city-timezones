@@ -6,6 +6,7 @@ const { pipeline, Readable, Transform } = require('stream');
 const { promisify } = require('util');
 const fetch = require('node-fetch');
 const csv = require('csv-parser');
+const {removeSpecialCharacters} = require('./util');
 
 const pipelineAsync = promisify(pipeline);
 
