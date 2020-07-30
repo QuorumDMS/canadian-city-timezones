@@ -1,20 +1,18 @@
 #!/usr/bin/env node
 
-const { URLSearchParams } = require('url');
 const { createWriteStream } = require('fs');
 const { pipeline, Readable, Transform } = require('stream');
 const { promisify } = require('util');
 const fetch = require('node-fetch');
 const csv = require('csv-parser');
 const {removeSpecialCharacters} = require('./util');
-const { exit } = require('process');
 
 const pipelineAsync = promisify(pipeline);
 
 require('dotenv').config();
 
 const CAN_CITY_LIST = 'https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/hlt-fst/pd-pl/Tables/CompFile.cfm?Lang=Eng&T=301&OFT=FULLCSV';
-const GEOCODE_API_URL = 'https://geocode.xyz';
+const LOCATION_API_URL = 'https://us1.locationiq.com/v1/';
 
 const VALID_CSD_TYPES = [
   'City',
@@ -40,42 +38,53 @@ async function * getCityData() {
   }
 }
 
-async function getGeocodeData(value) {
-  const params = new URLSearchParams();
-  params.append('locate', value);
-  params.append('region', 'CA');
-  params.append('json', '1');
-  params.append('moreinfo', '1');
+async function getLocationData(value) {
+  const url = new URL('search.php', LOCATION_API_URL);
+  url.searchParams.append('key', process.env.LOCATION_API_KEY);
+  url.searchParams.append('format', 'json');
+  url.searchParams.append('q', value);
+  url.searchParams.append('addressdetails', '1');
+  url.searchParams.append('normalizeaddress', '1');
+  url.searchParams.append('normalizecity', '1');
+  url.searchParams.append('countrycodes', 'ca');
 
-  const req = await fetch(GEOCODE_API_URL, {
-    method: 'post',
-    body: params
-  });
-  const json = await req.json();
-
+  const req = await fetch(url.href);
   if (!req.ok) {
-    const [, limit] = /up to (\d*\.*\d+) per sec/.exec(json.error.message) || [, 1];
-    const throttle = (1 / Number(limit)) * 1000;
-
-    await sleep(throttle);
-    return await getGeocodeData(value);
+    throw new Error(`Not ok: ${req.status}`);
   }
 
-  return json;
+  const json = await req.json();
+  return json[0] || null;
+}
+
+async function getTimezoneData({lat, lon} = {}) {
+  const url = new URL('timezone.php', LOCATION_API_URL);
+  url.searchParams.append('key', process.env.LOCATION_API_KEY);
+  url.searchParams.append('lat', lat);
+  url.searchParams.append('lon', lon);
+
+  const req = await fetch(url.href);
+  if (!req.ok) {
+    throw new Error(`Not ok: ${req.status}`);
+  }
+
+  const json = await req.json();
+  return json.timezone;
 }
 
 async function * generateData() {
   for await (const cityData of getCityData()) {
     const value = [cityData.name, cityData.province].join(', ');
-    console.log(value);
 
-    const geocode = await getGeocodeData(value);
+    const location = await getLocationData(value);
+    const timezone = await getTimezoneData(location);
 
     yield [
-      removeSpecialCharacters(cityData.name),
-      removeSpecialCharacters(cityData.province),
-      geocode.timezone
-    ].join('\t');
+      removeSpecialCharacters(location.address.city),
+      removeSpecialCharacters(location.address.state),
+      timezone.name,
+      timezone.short_name
+    ].join(',');
 
     await sleep(1000);
   }
@@ -86,7 +95,10 @@ async function writeData(file, iterator) {
     Readable.from(iterator),
     new Transform({
       objectMode: true,
-      transform: (item, _, callback) => callback(null, item + '\n')
+      transform: (value, _, callback) => {
+        console.log(value);
+        callback(null, value + '\n');
+      }
     }),
     createWriteStream(file)
   );
@@ -97,6 +109,6 @@ void async function () {
     await writeData(`${__dirname}/data.csv`, generateData());
   } catch (err) {
     console.error(err);
-    exit(1);
+    process.exit(1);
   }
 }();

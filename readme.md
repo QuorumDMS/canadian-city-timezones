@@ -44,6 +44,6 @@ Returns all matching results for the given string.
 
 ## Development
 
-Timezones are generated automatically by pulling the list of areas from `gc.ca` and feeding them into `geocode.xyz`.
+Timezones are generated automatically by pulling the list of areas from `gc.ca` and feeding them into `locationiq.com`.
 
 To trigger generation, create a commit containing `[data]` in the message.
