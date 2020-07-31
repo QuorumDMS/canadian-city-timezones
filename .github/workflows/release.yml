@@ -11,7 +11,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
-      - run: mkdir -p data
+      - name: Setup
+        run: mkdir -p data
       - name: Download
         uses: autovance/s3-sync-action@master
         with:
@@ -27,10 +28,7 @@ jobs:
         with:
           args: unzip -qq ./data/canadian-city-timezones.zip -d ./src
       - name: Release
-        run: |
-          ls -la
-          ls -la src
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      #   run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npx semantic-release
