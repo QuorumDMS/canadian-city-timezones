@@ -5,8 +5,9 @@ const {createInterface} = require('readline');
 const CITY_MAP_DATA =  path.join(__dirname, 'data.csv');
 
 const HEADERS = [
-  'name',
+  'city',
   'province',
+  'timezoneName',
   'timezone'
 ];
 

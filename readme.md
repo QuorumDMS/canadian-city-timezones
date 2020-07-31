@@ -11,8 +11,11 @@ Searchable timezones for all Canadian cities, towns, townships, villages, hamlet
 ```ts
 import {find, findAll} from 'canadian-city-timezones';
 
-const {timezone} = await find('Lethbridge Alberta');
-timezone // America/Edmonton
+const result = await find('Lethbridge Alberta');
+result.city // Lethbridge
+result.province // Alberta
+result.timezone // MST
+result.timezoneName // America/Edmonton
 ```
 
 ## API
@@ -36,9 +39,10 @@ Returns all matching results for the given string.
 `TimezoneResult`
 ```
 {
-  name: string,
-  province: string,
-  timezone: string
+  city: string;
+  province: string;
+  timezone: string;
+  timezone_name: string;
 }
 ```
 

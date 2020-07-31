@@ -1,7 +1,8 @@
 declare interface TimezoneResult {
-  name: string,
-  province: string,
-  timezone: string
+  city: string;
+  province: string;
+  timezone: string;
+  timezoneName: string;
 }
 
 declare function find(query: string): Promise<TimezoneResult>;
