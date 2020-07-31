@@ -1,10 +1,10 @@
 name: Generate
-on:
-  push:
-    branches:
-      - master
 # on:
-#   workflow_dispatch
+#   push:
+#     branches:
+#       - master
+on:
+  workflow_dispatch
 
 jobs:
   generate:
@@ -24,7 +24,7 @@ jobs:
       - name: Zip
         uses: montudor/action-zip@v0.1.0
         with:
-          args: zip -qq -r src/data.csv src/data.zip
+          args: zip -qq ./src/data.zip ./src/data.csv
       - name: Upload
         uses: autovance/s3-sync-action@master
         with:
