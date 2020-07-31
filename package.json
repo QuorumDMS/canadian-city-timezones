@@ -1,7 +1,7 @@
 {
   "name": "canadian-city-timezones",
   "version": "1.0.0",
-  "description": "",
+  "description": "Searchable timezones for all Canadian cities, towns, townships, villages, hamlets, and municipalities.",
   "main": "src/index.js",
   "types": "src/index.d.ts",
   "files": [
@@ -12,9 +12,14 @@
   "scripts": {
     "test": "npx jest"
   },
-  "keywords": [],
+  "keywords": [
+    "canada",
+    "canadian",
+    "city",
+    "timezones"
+  ],
   "author": "trs",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "csv-parser": "^2.3.3",
     "dotenv": "^8.2.0",
