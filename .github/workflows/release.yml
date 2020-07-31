@@ -19,12 +19,12 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           # AWS_REGION: 'ca-central-1'
-          SOURCE_DIR: s3://${{ secrets.AWS_S3_BUCKET }}/data/canadian-city-timezones.zip
-          DEST_DIR: src/data.zip
+          SOURCE_DIR: s3://${{ secrets.AWS_S3_BUCKET }}/data
+          DEST_DIR: src
       - name: Unzip
         uses: montudor/action-zip@v0.1.0
         with:
-          args: unzip -qq ./src/data.zip -d ./src
+          args: unzip -qq ./src/canadian-city-timezones.zip -d ./src
       # - name: Release
       #   env:
       #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

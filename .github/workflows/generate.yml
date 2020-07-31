@@ -1,8 +1,4 @@
 name: Generate
-# on:
-#   push:
-#     branches:
-#       - master
 on:
   workflow_dispatch
 
@@ -20,11 +16,13 @@ jobs:
       - name: Generate
         env:
           LOCATION_API_KEY: ${{ secrets.LOCATION_API_KEY }}
-        run: node ./src/generate.js src/data.csv
+        run: |
+          node ./src/generate.js src/data.csv
+          mkdir -p data
       - name: Zip
         uses: montudor/action-zip@v0.1.0
         with:
-          args: zip -qq ./src/data.zip ./src/data.csv
+          args: zip -qq data/canadian-city-timezones.zip src/data.csv
       - name: Upload
         uses: autovance/s3-sync-action@master
         with:
@@ -33,5 +31,5 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           # AWS_REGION: 'ca-central-1'
-          SOURCE_DIR: src/data.zip
-          DEST_DIR: s3://${{ secrets.AWS_S3_BUCKET }}/data/canadian-city-timezones.zip
+          SOURCE_DIR: data
+          DEST_DIR: s3://${{ secrets.AWS_S3_BUCKET }}/data
