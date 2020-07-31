@@ -1,4 +1,4 @@
-name: Generate
+name: Main
 on:
   push:
     branches:
@@ -6,7 +6,7 @@ on:
 
 jobs:
   generate:
-    name: Build
+    name: Generate
     runs-on: ubuntu-latest
     if: "contains(github.event.head_commit.message, '[data]')"
     steps:
@@ -19,7 +19,33 @@ jobs:
       - name: Generate
         env:
           LOCATION_API_KEY: ${{ secrets.LOCATION_API_KEY }}
-        run: node ./src/generate.js
+        run: node ./src/generate.js data/data.csv
+      - name: Persist Data
+        run: |
+          git add data/data.csv -f
+          git commit -m "chore(action): generate data"
+          git branch -D data
+          git subtree split --prefix=data -b data
+          git push -f origin data:data
+
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: 'data'
+      - uses: actions/upload-artifact@v2
+        with:
+          name: data
+          path: data/data.csv
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+      - uses: actions/download-artifact@v2
+        with:
+          name: data
+          path: src/data.csv
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 
-const { createWriteStream } = require('fs');
+const { createWriteStream, mkdir } = require('fs');
+const { dirname } = require('path');
 const { pipeline, Readable, Transform } = require('stream');
 const { promisify } = require('util');
 const fetch = require('node-fetch');
 const csv = require('csv-parser');
 const {removeSpecialCharacters} = require('./util');
 
+const mkdirAsync = promisify(mkdir);
 const pipelineAsync = promisify(pipeline);
 
 require('dotenv').config();
@@ -26,18 +28,23 @@ const VALID_CSD_TYPES = [
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function * getCityData() {
-  const req = await fetch(CAN_CITY_LIST);
-  for await (const row of req.body.pipe(csv())) {
-    const csdType =row['CSD type, english'];
-    if (!VALID_CSD_TYPES.includes(csdType)) continue;
+  // const req = await fetch(CAN_CITY_LIST);
+  // for await (const row of req.body.pipe(csv())) {
+  //   const csdType =row['CSD type, english'];
+  //   if (!VALID_CSD_TYPES.includes(csdType)) continue;
 
-    const name = row['Geographic name, english'];
-    const province = row['Province / territory, english'];
+  //   const name = row['Geographic name, english'];
+  //   const province = row['Province / territory, english'];
 
-    yield {
-      name,
-      province
-    };
+  //   yield {
+  //     name,
+  //     province
+  //   };
+  // }
+
+  yield {
+    name: 'Lethbridge',
+    province: 'Alberta'
   }
 }
 
@@ -121,7 +128,13 @@ async function writeData(file, iterator) {
 
 void async function () {
   try {
-    await writeData(`${__dirname}/data.csv`, generateData());
+    const file = process.argv[2];
+    if (!file) {
+      throw new Error('Missing output file');
+    }
+
+    await mkdirAsync(dirname(file), {recursive: true}).catch(() => void 0);
+    await writeData(file, generateData());
   } catch (err) {
     console.error(err);
     process.exit(1);
