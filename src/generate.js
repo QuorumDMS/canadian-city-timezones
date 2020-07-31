@@ -28,23 +28,18 @@ const VALID_CSD_TYPES = [
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function * getCityData() {
-  // const req = await fetch(CAN_CITY_LIST);
-  // for await (const row of req.body.pipe(csv())) {
-  //   const csdType =row['CSD type, english'];
-  //   if (!VALID_CSD_TYPES.includes(csdType)) continue;
+  const req = await fetch(CAN_CITY_LIST);
+  for await (const row of req.body.pipe(csv())) {
+    const csdType =row['CSD type, english'];
+    if (!VALID_CSD_TYPES.includes(csdType)) continue;
 
-  //   const name = row['Geographic name, english'];
-  //   const province = row['Province / territory, english'];
+    const name = row['Geographic name, english'];
+    const province = row['Province / territory, english'];
 
-  //   yield {
-  //     name,
-  //     province
-  //   };
-  // }
-
-  yield {
-    name: 'Lethbridge',
-    province: 'Alberta'
+    yield {
+      name,
+      province
+    };
   }
 }
 
@@ -52,7 +47,9 @@ async function fetchLocationIQ(url, count = 0) {
   const req = await fetch(url);
   if (req.status === 404) return null;
   else if (req.status === 429) {
-    await sleep(Math.max(count * 60, 1) * 1000);
+    const waitSecs = Math.max(count * 60, 1);
+    console.log(`  429 - Waiting ${waitSecs} seconds`);
+    await sleep(waitSecs * 1000);
     return fetchLocationIQ(url, count + 1);
   }
 
