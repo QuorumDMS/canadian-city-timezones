@@ -18,8 +18,10 @@
   "devDependencies": {
     "csv-parser": "^2.3.3",
     "dotenv": "^8.2.0",
+    "geo-tz": "^6.0.0",
     "jest": "^26.2.1",
     "node-fetch": "^2.6.0",
+    "remove-accents": "^0.4.2",
     "semantic-release": "^17.1.1"
   }
 }

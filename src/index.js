@@ -7,7 +7,6 @@ const CITY_MAP_DATA =  path.join(__dirname, 'data.csv');
 const HEADERS = [
   'city',
   'province',
-  'timezoneName',
   'timezone'
 ];
 
@@ -27,12 +26,6 @@ async function * getDataIterator() {
     yield obj;
   }
 }
-
-void async function () {
-  for await (const data of getDataIterator()) {
-    console.log(data);
-  }
-}()
 
 const isPartialMatchFactory = (query) => {
   const searchItems = query.split(' ').map((item) => removeSpecialCharacters(item));

@@ -26,7 +26,10 @@ jobs:
         uses: montudor/action-zip@v0.1.0
         with:
           args: unzip -qq ./data/canadian-city-timezones.zip -d ./src
-      # - name: Release
+      - name: Release
+        run: |
+          ls -la
+          ls -la src
       #   env:
       #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

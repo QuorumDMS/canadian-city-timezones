@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 
-const { createWriteStream, mkdir } = require('fs');
+const { createWriteStream, mkdir, createReadStream } = require('fs');
 const { dirname } = require('path');
 const { pipeline, Readable, Transform } = require('stream');
 const { promisify } = require('util');
 const fetch = require('node-fetch');
 const csv = require('csv-parser');
+const geoTz = require('geo-tz');
+const removeAccents = require('remove-accents');
 const {removeSpecialCharacters} = require('./util');
 
 const mkdirAsync = promisify(mkdir);
@@ -14,14 +16,14 @@ const pipelineAsync = promisify(pipeline);
 require('dotenv').config();
 
 const CAN_CITY_LIST = 'https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/hlt-fst/pd-pl/Tables/CompFile.cfm?Lang=Eng&T=301&OFT=FULLCSV';
-const LOCATION_API_URL = 'https://us1.locationiq.com/v1/';
+const MAP_BOX_API_URL = 'https://api.mapbox.com/';
 
 const VALID_CSD_TYPES = [
   'City',
   'Hamlet',
   'Municipality',
   'Town',
-  'Township and royalty',
+  'Township',
   'Village'
 ];
 
@@ -29,12 +31,20 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function * getCityData() {
   const req = await fetch(CAN_CITY_LIST);
-  for await (const row of req.body.pipe(csv())) {
-    const csdType =row['CSD type, english'];
-    if (!VALID_CSD_TYPES.includes(csdType)) continue;
+  // Download file first as the csv parser would prematurely end being piped it directly
+  await pipelineAsync(
+    req.body,
+    createWriteStream('gc.csv')
+  );
 
-    const name = row['Geographic name, english'];
-    const province = row['Province / territory, english'];
+  for await (const row of createReadStream('gc.csv').pipe(csv())) {
+    const csdType = row['CSD type, english'];
+    if (!VALID_CSD_TYPES.includes(csdType)) {
+      continue;
+    }
+
+    const name = removeAccents(row['Geographic name, english']);
+    const province = removeAccents(row['Province / territory, english']);
 
     yield {
       name,
@@ -43,50 +53,24 @@ async function * getCityData() {
   }
 }
 
-async function fetchLocationIQ(url, count = 0) {
-  const req = await fetch(url);
-  if (req.status === 404) return null;
-  else if (req.status === 429) {
-    const waitSecs = Math.max(count * 60, 1);
-    console.log(`  429 - Waiting ${waitSecs} seconds`);
-    await sleep(waitSecs * 1000);
-    return fetchLocationIQ(url, count + 1);
-  }
-
-  if (!req.ok) {
-    throw new Error(`Not ok: ${req.status}`);
-  }
-
-  return req.json();
-}
-
 async function getLocationData(value) {
-  const url = new URL('search.php', LOCATION_API_URL);
-  url.searchParams.append('key', process.env.LOCATION_API_KEY);
-  url.searchParams.append('format', 'json');
-  url.searchParams.append('q', value);
-  url.searchParams.append('addressdetails', '1');
-  url.searchParams.append('normalizeaddress', '1');
-  url.searchParams.append('normalizecity', '1');
-  url.searchParams.append('countrycodes', 'ca');
+  const url = new URL(`geocoding/v5/mapbox.places/${encodeURIComponent(value)}.json`, MAP_BOX_API_URL);
+  url.searchParams.append('access_token', process.env.MAP_BOX_API_KEY);
+  url.searchParams.append('types', 'place');
+  url.searchParams.append('country', 'CA');
+  url.searchParams.append('autocomplete', 'false');
 
-  const json = await fetchLocationIQ(url.href);
-  if (!json) return null;
+  const req = await fetch(url.href);
 
-  const locations = json.filter((item) => item.address.city && item.address.state);
-  return locations[0];
-}
+  const json = await req.json();
 
-async function getTimezoneData({lat, lon} = {}) {
-  const url = new URL('timezone.php', LOCATION_API_URL);
-  url.searchParams.append('key', process.env.LOCATION_API_KEY);
-  url.searchParams.append('lat', lat);
-  url.searchParams.append('lon', lon);
+  if (!json || !json.features || !json.features.length) return null;
 
-  const json = await fetchLocationIQ(url.href);
-  if (!json) return null;
-
-  return json.timezone;
+  return {
+    name: json.features[0].place_name,
+    lon: json.features[0].center[0],
+    lat: json.features[0].center[1]
+  };
 }
 
 async function * generateData() {
@@ -94,18 +78,24 @@ async function * generateData() {
     const value = [cityData.name, cityData.province].join(', ');
 
     const location = await getLocationData(value);
-    if (!location) continue;
+    if (!location) {
+      console.log(`[!] No location found for: ${value}`);
+      continue;
+    }
 
-    const timezone = await getTimezoneData(location);
+    const [timezone] = geoTz(location.lat, location.lon) || [];
+    if (!location) {
+      console.log(`[!] No timezone found for: ${value} (${location.lat}, ${location.lon})`);
+      continue;
+    }
 
     yield [
-      removeSpecialCharacters(location.address.city),
-      removeSpecialCharacters(location.address.state),
-      timezone.name,
-      timezone.short_name
+      removeSpecialCharacters(cityData.name),
+      removeSpecialCharacters(cityData.province),
+      timezone
     ].join(',');
 
-    await sleep(1000);
+    await sleep(100);
   }
 }
 
@@ -133,7 +123,7 @@ void async function () {
     await mkdirAsync(dirname(file), {recursive: true}).catch(() => void 0);
     await writeData(file, generateData());
   } catch (err) {
-    console.error(err);
+    console.error('[x]', err);
     process.exit(1);
   }
 }();
