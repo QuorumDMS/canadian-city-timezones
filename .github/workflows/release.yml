@@ -1,0 +1,32 @@
+name: Release
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+      - name: Download
+        uses: autovance/s3-sync-action@master
+        with:
+          args: --acl public-read --follow-symlinks --delete
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          # AWS_REGION: 'ca-central-1'
+          SOURCE_DIR: s3://${{ secrets.AWS_S3_BUCKET }}/data/canadian-city-timezones.zip
+          DEST_DIR: src/data.zip
+      - name: Unzip
+        uses: montudor/action-zip@v0.1.0
+        with:
+          args: unzip -qq ./src/data.zip -d ./src
+      # - name: Release
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      #   run: npx semantic-release
