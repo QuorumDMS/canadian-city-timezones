@@ -17,12 +17,12 @@ jobs:
         env:
           LOCATION_API_KEY: ${{ secrets.LOCATION_API_KEY }}
         run: |
-          node ./src/generate.js src/data.csv
+          node ./src/generate.js data.csv
           mkdir -p data
       - name: Zip
         uses: montudor/action-zip@v0.1.0
         with:
-          args: zip -qq data/canadian-city-timezones.zip src/data.csv
+          args: zip -qq data/canadian-city-timezones.zip data.csv
       - name: Upload
         uses: autovance/s3-sync-action@master
         with:
