@@ -1,13 +1,12 @@
 {
   "name": "canadian-city-timezones",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Searchable timezones for all Canadian cities, towns, townships, villages, hamlets, and municipalities.",
   "main": "src/index.js",
   "types": "src/index.d.ts",
   "files": [
     "src/index.js",
     "src/index.d.ts",
-    "src/util.js",
     "src/data.csv"
   ],
   "scripts": {
@@ -20,6 +19,10 @@
     "timezones"
   ],
   "author": "trs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/autovance/canadian-city-timezones"
+  },
   "license": "MIT",
   "devDependencies": {
     "csv-parser": "^2.3.3",
