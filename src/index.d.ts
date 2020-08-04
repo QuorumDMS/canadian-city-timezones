@@ -1,3 +1,5 @@
+declare module 'canadian-city-timezones';
+
 declare interface TimezoneResult {
   city: string;
   province: string;
