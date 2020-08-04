@@ -12,4 +12,4 @@ declare function values(): AsyncGenerator<TimezoneResult>;
 
 declare function find(predicate: Predicate): Promise<TimezoneResult | null>;
 
-declare function findAll(predicate: Predicate): AsyncGenerator<TimezoneResult>;
+declare function filter(predicate: Predicate): AsyncGenerator<TimezoneResult>;
