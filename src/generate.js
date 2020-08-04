@@ -26,10 +26,6 @@ const VALID_CSD_TYPES = [
   'Village'
 ];
 
-const VALID_CHARACTERS_REGEX = /[^a-zA-Z0-9 ]/ig;
-
-const removeSpecialCharacters = (value = '') => value.replace(VALID_CHARACTERS_REGEX, '').toLocaleLowerCase();
-
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function * getCityData() {
@@ -93,8 +89,8 @@ async function * generateData() {
     }
 
     yield [
-      removeSpecialCharacters(cityData.name),
-      removeSpecialCharacters(cityData.province),
+      cityData.name,
+      cityData.province,
       timezone
     ].join(',');
 
