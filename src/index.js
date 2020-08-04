@@ -33,7 +33,7 @@ const isPartialMatchFactory = (query) => {
 
   return (data) => {
     const values = [
-      data.name,
+      data.city,
       data.province
     ];
 
