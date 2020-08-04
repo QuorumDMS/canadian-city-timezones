@@ -6,6 +6,10 @@ declare interface TimezoneResult {
   timezone: string;
 }
 
-declare function find(query: string): Promise<TimezoneResult>;
+declare type Predicate = (data: TimezoneResult) => boolean;
 
-declare function findAll(query: string): Promise<TimezoneResult[]>;
+declare function values(): AsyncGenerator<TimezoneResult>;
+
+declare function find(predicate: Predicate): Promise<TimezoneResult | null>;
+
+declare function filter(predicate: Predicate): AsyncGenerator<TimezoneResult>;

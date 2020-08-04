@@ -1,7 +1,6 @@
 const path = require('path');
 const {createReadStream} = require('fs');
 const {createInterface} = require('readline');
-const {removeSpecialCharacters} = require('./util');
 
 const CITY_MAP_DATA =  path.join(__dirname, 'data.csv');
 
@@ -28,43 +27,37 @@ async function * getDataIterator() {
   }
 }
 
-const isPartialMatchFactory = (query) => {
-  const searchItems = query.split(' ').map((item) => removeSpecialCharacters(item));
-
-  return (data) => {
-    const values = [
-      data.city,
-      data.province
-    ];
-
-    return searchItems.every((item) => values.join().includes(item));
-  }
+async function* values() {
+  yield* getDataIterator();
 }
 
-async function find(query) {
-  const isPartialMatch = isPartialMatchFactory(query);
+async function find(predicate) {
+  if (typeof predicate !== 'function') {
+    throw new TypeError(`${String(predicate)} is not a function`);
+  }
 
   for await (const data of getDataIterator()) {
-    if (isPartialMatch(data)) {
+    if (predicate(data)) {
       return data;
     }
   }
   return null;
 }
 
-async function findAll(query) {
-  const isPartialMatch = isPartialMatchFactory(query);
+async function* filter(predicate) {
+  if (typeof predicate !== 'function') {
+    throw new TypeError(`${String(predicate)} is not a function`);
+  }
 
-  const results = [];
   for await (const data of getDataIterator()) {
-    if (isPartialMatch(data)) {
-      results.push(data);
+    if (predicate(data)) {
+      yield data;
     }
   }
-  return results;
 }
 
 module.exports = {
+  values,
   find,
-  findAll
+  filter
 };

@@ -8,7 +8,6 @@ const fetch = require('node-fetch');
 const csv = require('csv-parser');
 const geoTz = require('geo-tz');
 const removeAccents = require('remove-accents');
-const {removeSpecialCharacters} = require('./util');
 
 const mkdirAsync = promisify(mkdir);
 const pipelineAsync = promisify(pipeline);
@@ -31,7 +30,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function * getCityData() {
   const req = await fetch(CAN_CITY_LIST);
-  // Download file first as the csv parser would prematurely end being piped it directly
+  // Download file first as the csv parser would prematurely end being piped in directly
   await pipelineAsync(
     req.body,
     createWriteStream('gc.csv')
@@ -90,8 +89,8 @@ async function * generateData() {
     }
 
     yield [
-      removeSpecialCharacters(cityData.name),
-      removeSpecialCharacters(cityData.province),
+      cityData.name,
+      cityData.province,
       timezone
     ].join(',');
 

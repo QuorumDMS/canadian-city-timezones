@@ -11,9 +11,9 @@
 `npm install canadian-city-timezones`
 
 ```ts
-import {find, findAll} from 'canadian-city-timezones';
+import {find} from 'canadian-city-timezones';
 
-const result = await find('Lethbridge Alberta');
+const result = await find((city, province) => city === 'Lethbridge' && province === 'Alberta');
 result.city // Lethbridge
 result.province // Alberta
 result.timezone // America/Edmonton
@@ -24,16 +24,22 @@ result.timezone // America/Edmonton
 ### Methods
 
 ```ts
-find(query: string): Promise<TimezoneResult>
+find(predicate: (value: TimezoneResult) => boolean): Promise<TimezoneResult | null>
 ```
 
-Returns the first matching result for the given string.
+Returns the first matching result for the given predicate.
 
 ```ts
-findAll(query: string): Promise<TimezoneResult[]>
+filter(predicate: (value: TimezoneResult) => boolean): AsyncGenerator<TimezoneResult>
 ```
 
-Returns all matching results for the given string.
+Yields all matching results for the given predicate.
+
+```ts
+values(): AsyncGenerator<TimezoneResult>
+```
+
+Yields all values.
 
 ### Interfaces
 
