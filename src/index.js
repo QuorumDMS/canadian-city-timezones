@@ -1,6 +1,7 @@
 const path = require('path');
 const {createReadStream} = require('fs');
 const {createInterface} = require('readline');
+const {removeSpecialCharacters} = require('./util');
 
 const CITY_MAP_DATA =  path.join(__dirname, 'data.csv');
 
