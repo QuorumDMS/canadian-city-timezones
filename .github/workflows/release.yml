@@ -5,9 +5,50 @@ on:
       - master
 
 jobs:
+  data:
+    name: Data
+    runs-on: ubuntu-latest
+    steps:
+      - name: Changes
+        id: file_changes
+        uses: trilom/file-changes-action@v1.2
+      - uses: actions/checkout@v2
+        if: ${{ contains(steps.file_changes.outputs.files_modified, 'src/generate.js') }}
+      - uses: actions/setup-node@v1
+        if: ${{ contains(steps.file_changes.outputs.files_modified, 'src/generate.js') }}
+        with:
+          node-version: '12'
+      - name: Install
+        if: ${{ contains(steps.file_changes.outputs.files_modified, 'src/generate.js') }}
+        run: npm ci
+      - name: Generate
+        if: ${{ contains(steps.file_changes.outputs.files_modified, 'src/generate.js') }}
+        env:
+          MAP_BOX_API_KEY: ${{ secrets.MAP_BOX_API_KEY }}
+        run: |
+          node ./src/generate.js data.csv
+          mkdir -p data
+      - name: Zip
+        if: ${{ contains(steps.file_changes.outputs.files_modified, 'src/generate.js') }}
+        uses: montudor/action-zip@v0.1.0
+        with:
+          args: zip -qq data/canadian-city-timezones.zip data.csv
+      - name: Upload
+        if: ${{ contains(steps.file_changes.outputs.files_modified, 'src/generate.js') }}
+        uses: autovance/s3-sync-action@master
+        with:
+          args: --acl public-read --follow-symlinks --delete
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          # AWS_REGION: 'ca-central-1'
+          SOURCE_DIR: data
+          DEST_DIR: s3://${{ secrets.AWS_S3_BUCKET }}/data
+
   release:
     name: Release
     runs-on: ubuntu-latest
+    needs: data
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
