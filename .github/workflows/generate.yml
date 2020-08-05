@@ -15,7 +15,7 @@ jobs:
         run: npm ci
       - name: Generate
         env:
-          LOCATION_API_KEY: ${{ secrets.LOCATION_API_KEY }}
+          MAP_BOX_API_KEY: ${{ secrets.MAP_BOX_API_KEY }}
         run: |
           node ./src/generate.js data.csv
           mkdir -p data
