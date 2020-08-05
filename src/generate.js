@@ -5,16 +5,17 @@ const { dirname } = require('path');
 const { pipeline, Readable, Transform } = require('stream');
 const { promisify } = require('util');
 const fetch = require('node-fetch');
-const csv = require('csv-parser');
 const geoTz = require('geo-tz');
 const removeAccents = require('remove-accents');
+const Pick = require('stream-json/filters/Pick');
+const {streamArray} = require('stream-json/streamers/StreamArray');
 
 const mkdirAsync = promisify(mkdir);
 const pipelineAsync = promisify(pipeline);
 
 require('dotenv').config();
 
-const CAN_CITY_LIST = 'https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/hlt-fst/pd-pl/Tables/CompFile.cfm?Lang=Eng&T=301&OFT=FULLCSV';
+const STATS_CAN_URL = 'https://www12.statcan.gc.ca/rest/census-recensement/';
 const MAP_BOX_API_URL = 'https://api.mapbox.com/';
 
 const VALID_CSD_TYPES = [
@@ -29,21 +30,68 @@ const VALID_CSD_TYPES = [
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function * getCityData() {
-  const req = await fetch(CAN_CITY_LIST);
-  // Download file first as the csv parser would prematurely end being piped in directly
+  const url = new URL('CR2016Geo.json', STATS_CAN_URL);
+  url.searchParams.append('lang', 'E');
+  url.searchParams.append('geos', 'CSD');
+  url.searchParams.append('cpt', '00');
+
+  const gcDataFileName = 'gc.json';
+
+  // Download Stats Canada json data
+  const req = await fetch(url.href);
   await pipelineAsync(
     req.body,
-    createWriteStream('gc.csv')
+    new Transform({
+      transform: (() => {
+        let truncateCount = 0;
+        return function(buffer, _encoding, cb) {
+          // Response starts with // that must be stripped to be considered valid json
+          if (truncateCount < 2) {
+            let sliceCount = Math.min(2 - truncateCount, buffer.length);
+            truncateCount += sliceCount;
+
+            buffer = buffer.slice(sliceCount);
+          }
+
+          cb(null, buffer);
+        }
+      })()
+    }),
+    createWriteStream(gcDataFileName)
   );
 
-  for await (const row of createReadStream('gc.csv').pipe(csv())) {
-    const csdType = row['CSD type, english'];
-    if (!VALID_CSD_TYPES.includes(csdType)) {
+  // Find all headers in document
+  const headerPipeline = createReadStream(gcDataFileName)
+    .pipe(Pick.withParser({filter: 'COLUMNS'}))
+    .pipe(streamArray());
+
+  const headers = [];
+  for await (const {key, value} of headerPipeline) {
+    headers[key] = value;
+  }
+
+  // Find all values
+  const valuePipeline = createReadStream(gcDataFileName)
+    .pipe(Pick.withParser({filter: 'DATA'}))
+    .pipe(streamArray())
+    .pipe(new Transform({
+      objectMode: true,
+      transform: ({value}, _, cb) => {
+        const row = headers.reduce((obj, header, i) => {
+          obj[header] = value[i];
+          return obj;
+        }, {});
+        cb(null, row);
+      }
+    }));
+
+  for await (const row of valuePipeline) {
+    if (!VALID_CSD_TYPES.includes(row.GEO_TYPE)) {
       continue;
     }
 
-    const name = removeAccents(row['Geographic name, english']);
-    const province = removeAccents(row['Province / territory, english']);
+    const name = removeAccents(row.GEO_NAME_NOM);
+    const province = removeAccents(row.PROV_TERR_NAME_NOM);
 
     yield {
       name,
