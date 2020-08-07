@@ -1,4 +1,5 @@
 node_modules/
 data.csv
 gc.csv
+gc.json
 .env
