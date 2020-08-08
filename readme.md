@@ -13,7 +13,7 @@
 ```ts
 import {find} from 'canadian-city-timezones';
 
-const result = await find((city, province) => city === 'Lethbridge' && province === 'Alberta');
+const result = await find(({city, province}) => city === 'Lethbridge' && province === 'Alberta');
 result.city // Lethbridge
 result.province // Alberta
 result.timezone // America/Edmonton
