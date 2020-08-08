@@ -8,7 +8,7 @@ const fetch = require('node-fetch');
 const geoTz = require('geo-tz');
 const removeAccents = require('remove-accents');
 const Pick = require('stream-json/filters/Pick');
-const {streamArray} = require('stream-json/streamers/StreamArray');
+const {streamValues} = require('stream-json/streamers/StreamValues');
 
 const mkdirAsync = promisify(mkdir);
 const pipelineAsync = promisify(pipeline);
@@ -38,13 +38,15 @@ async function * getCityData() {
   const gcDataFileName = 'gc.json';
 
   // Download Stats Canada json data
+  // We aren't piping this as the buffer seems to end prematurely when we do.
+  // So let's just download it and then read from the downloaded file.
   const req = await fetch(url.href);
   await pipelineAsync(
     req.body,
     new Transform({
       transform: (() => {
         let truncateCount = 0;
-        return function(buffer, _encoding, cb) {
+        return (buffer, _, cb) => {
           // Response starts with // that must be stripped to be considered valid json
           if (truncateCount < 2) {
             let sliceCount = Math.min(2 - truncateCount, buffer.length);
@@ -52,7 +54,6 @@ async function * getCityData() {
 
             buffer = buffer.slice(sliceCount);
           }
-
           cb(null, buffer);
         }
       })()
@@ -60,29 +61,29 @@ async function * getCityData() {
     createWriteStream(gcDataFileName)
   );
 
-  // Find all headers in document
-  const headerPipeline = createReadStream(gcDataFileName)
-    .pipe(Pick.withParser({filter: 'COLUMNS'}))
-    .pipe(streamArray());
-
-  const headers = [];
-  for await (const {key, value} of headerPipeline) {
-    headers[key] = value;
-  }
-
   // Find all values
   const valuePipeline = createReadStream(gcDataFileName)
-    .pipe(Pick.withParser({filter: 'DATA'}))
-    .pipe(streamArray())
+    .pipe(Pick.withParser({filter: /^(?:COLUMNS|DATA\.\d+)\b/}))
+    .pipe(streamValues())
     .pipe(new Transform({
       objectMode: true,
-      transform: ({value}, _, cb) => {
-        const row = headers.reduce((obj, header, i) => {
-          obj[header] = value[i];
-          return obj;
-        }, {});
-        cb(null, row);
-      }
+      transform: (() => {
+        let keys = [];
+        return (data, _, cb) => {
+          // Columns are first
+          if (data.key === 0) {
+            keys = data.value;
+            return cb();
+          }
+
+          // Next are values
+          const row = keys.reduce((obj, key, i) => {
+            obj[key] = data.value[i];
+            return obj;
+          }, {});
+          cb(null, row);
+        }
+      })()
     }));
 
   for await (const row of valuePipeline) {
