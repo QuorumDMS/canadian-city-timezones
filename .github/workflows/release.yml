@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Changes
         id: file_changes
-        uses: trilom/file-changes-action@v1.2
+        uses: trilom/file-changes-action@v1.2.4
       - name: Generate
         uses: convictional/trigger-workflow-and-wait@v1.0.1
         with:
