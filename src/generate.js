@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// REMOVE ME
+
 const { createWriteStream, mkdir, createReadStream } = require('fs');
 const { dirname } = require('path');
 const { pipeline, Readable, Transform } = require('stream');
