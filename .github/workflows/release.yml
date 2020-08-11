@@ -1,8 +1,8 @@
 name: Release
 on:
-  push:
-    branches:
-      - master
+  push
+    # branches:
+    #   - master
 
 jobs:
   data:
@@ -46,8 +46,8 @@ jobs:
         uses: montudor/action-zip@v0.1.0
         with:
           args: unzip -qq ./data/canadian-city-timezones.zip -d ./src
-      - name: Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npx semantic-release
+      # - name: Release
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      #   run: npx semantic-release
