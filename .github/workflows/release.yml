@@ -15,9 +15,6 @@ jobs:
       - name: List
         run: |
           echo '${{ steps.file_changes.outputs.files}}'
-          echo '${{ steps.file_changes.outputs.files_modified}}'
-          echo '${{ steps.file_changes.outputs.files_added}}'
-          echo '${{ steps.file_changes.outputs.files_removed}}'
       - name: Generate
         uses: convictional/trigger-workflow-and-wait@v1.0.1
         with:
@@ -25,9 +22,9 @@ jobs:
           repo: ${{ github.event.repository.name }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           wait_interval: 30
-          event_type: Generate
+          event_type: generate
           ref: ${{ github.ref }}
-        if: ${{ contains(steps.file_changes.outputs.files_modified, 'src/generate.js') }}
+        # if: ${{ contains(steps.file_changes.outputs.files, 'src/generate.js') }}
 
   # release:
   #   name: Release
@@ -52,8 +49,8 @@ jobs:
   #       uses: montudor/action-zip@v0.1.0
   #       with:
   #         args: unzip -qq ./data/canadian-city-timezones.zip -d ./src
-      # - name: Release
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      #   run: npx semantic-release
+  #     - name: Release
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+  #       run: npx semantic-release
