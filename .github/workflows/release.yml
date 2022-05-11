@@ -5,9 +5,31 @@ on:
       - master
 
 jobs:
+  data:
+    name: Data
+    runs-on: ubuntu-latest
+    steps:
+      - name: Changes
+        id: file_changes
+        uses: trilom/file-changes-action@v1.2.4
+      - name: List
+        run: |
+          echo '${{ steps.file_changes.outputs.files}}'
+      - name: Generate
+        uses: convictional/trigger-workflow-and-wait@v1.0.1
+        with:
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          wait_interval: 30
+          event_type: generate
+          ref: ${{ github.ref }}
+        if: ${{ contains(steps.file_changes.outputs.files, 'src/generate.js') }}
+
   release:
     name: Release
     runs-on: ubuntu-latest
+    needs: data
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
