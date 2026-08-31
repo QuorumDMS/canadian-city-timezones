@@ -40,19 +40,23 @@ async function * getCityData() {
   // Download Stats Canada json data
   // We aren't piping this as the buffer seems to end prematurely when we do.
   // So let's just download it and then read from the downloaded file.
-  const req = await fetch(url.href);
+  const req = await fetch(url.href, {headers: {Accept: 'application/json'}});
   await pipelineAsync(
     req.body,
     new Transform({
       transform: (() => {
-        let truncateCount = 0;
+        let head = Buffer.alloc(0);
+        let checked = false;
         return (buffer, _, cb) => {
-          // Response starts with // that must be stripped to be considered valid json
-          if (truncateCount < 2) {
-            let sliceCount = Math.min(2 - truncateCount, buffer.length);
-            truncateCount += sliceCount;
+          // Responses used to start with // that had to be stripped to be considered
+          // valid json. They no longer do, so only strip it when it is actually there.
+          if (!checked) {
+            head = Buffer.concat([head, buffer]);
+            if (head.length < 2) return cb();
 
-            buffer = buffer.slice(sliceCount);
+            checked = true;
+            buffer = head.slice(0, 2).toString() === '//' ? head.slice(2) : head;
+            head = null;
           }
           cb(null, buffer);
         }
